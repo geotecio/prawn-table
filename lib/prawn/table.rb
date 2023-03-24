@@ -111,8 +111,10 @@ module Prawn
       # See the documentation on Prawn::Table for details on the arguments.
       #
       def table(data, options={}, &block)
+        before_start_new_page = options.delete(:before_start_new_page)
+        
         t = Table.new(data, self, options, &block)
-        t.draw
+        t.draw(before_start_new_page: before_start_new_page)
         t
       end
 
@@ -262,7 +264,7 @@ module Prawn
 
     # Draws the table onto the document at the document's current y-position.
     #
-    def draw
+    def draw(before_start_new_page: nil)
       with_position do
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
@@ -301,7 +303,7 @@ module Prawn
             # draw cells on the current page and then start a new one
             # this will also add a header to the new page if a header is set
             # reset array of cells for the new page
-            cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
+            cells_this_page, offset = ink_and_draw_cells_and_start_new_page(cells_this_page, cell, before_start_new_page)
 
             # remember the current row for background coloring
             started_new_page_at_row = cell.row
@@ -432,13 +434,14 @@ module Prawn
     end
 
     # ink and draw cells, then start a new page
-    def ink_and_draw_cells_and_start_new_page(cells_this_page, cell)
+    def ink_and_draw_cells_and_start_new_page(cells_this_page, cell, before_start_new_page)
       # don't draw only a header
       draw_cells = (@header_row.nil? || cells_this_page.size > @header_row.size)
 
       ink_and_draw_cells(cells_this_page, draw_cells)
 
       # start a new page or column
+      before_start_new_page.call unless before_start_new_page.nil?
       @pdf.bounds.move_past_bottom
 
       offset = (@pdf.y - cell.y)
