@@ -112,9 +112,10 @@ module Prawn
       #
       def table(data, options={}, &block)
         before_start_new_page = options.delete(:before_start_new_page)
+        after_render_table = options.delete(:after_render_table)
         
         t = Table.new(data, self, options, &block)
-        t.draw(before_start_new_page: before_start_new_page)
+        t.draw(before_start_new_page: before_start_new_page, after_render_table: after_render_table)
         t
       end
 
@@ -264,7 +265,7 @@ module Prawn
 
     # Draws the table onto the document at the document's current y-position.
     #
-    def draw(before_start_new_page: nil)
+    def draw(before_start_new_page: nil, after_render_table: nil)
       with_position do
         # Reference bounds are the non-stretchy bounds used to decide when to
         # flow to a new column / page.
@@ -321,6 +322,8 @@ module Prawn
 
         @pdf.move_cursor_to(@cells.last.relative_y(offset) - @cells.last.height)
       end
+      
+      after_render_table.call unless after_render_table.nil?
     end
 
     # Calculate and return the constrained column widths, taking into account
